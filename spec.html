@@ -5900,16 +5900,14 @@
     <emu-clause id="sec-privatebrandcheck" aoid="PrivateBrandCheck">
       <h1>PrivateBrandCheck ( _O_, _P_ )</h1>
       <emu-alg>
-        1. If _O_.[[PrivateBrands]] does not contain an entry _e_ such that SameValue(_e_, _P_.[[Brand]]) is *true*, then
-          1. Throw a *TypeError* exception.
+        1. If _O_.[[PrivateBrands]] does not contain an entry _e_ such that SameValue(_e_, _P_.[[Brand]]) is *true*, throw a *TypeError* exception.
       </emu-alg>
     </emu-clause>
 
     <emu-clause id="sec-privatebrandadd" aoid="PrivateBrandAdd">
       <h1>PrivateBrandAdd ( _O_, _brand_ )</h1>
       <emu-alg>
-        1. If _O_.[[PrivateBrands]] contains an entry _e_ such that SameValue(_e_, _brand_) is *true*, then
-          1. Throw a *TypeError* exception.
+        1. If _O_.[[PrivateBrands]] contains an entry _e_ such that SameValue(_e_, _brand_) is *true*, throw a *TypeError* exception.
         1. Append _brand_ to _O_.[[PrivateBrands]].
       </emu-alg>
     </emu-clause>
@@ -11178,7 +11176,7 @@
             Object | *undefined*
           </td>
           <td>
-            If the function is a class with private methods or accessors, this is the brand to be installed on objects that are being initialized by the constructor of this class. The brand is the class' prototype, or *undefined* if no private method or acessor is present in the class. This brand is used to check if an object can access class' private methods and acessors.
+            If the function is a class with private methods or accessors, this is the brand to be installed on objects that are being initialized by the constructor of this class. The brand is the class' prototype, or *undefined* if no private method or accessor is present in the class. This brand is used to check if an object can access class' private methods and accessors.
           </td>
         </tr>
         </tbody>
@@ -11298,7 +11296,7 @@
           1. Let _exprValue_ be ? GetValue(_exprRef_).
           1. Return Completion { [[Type]]: ~return~, [[Value]]: _exprValue_, [[Target]]: ~empty~ }.
         </emu-alg>
-        <emu-note>FunctionDeclarationInstantiation would not have any observable behaviour here, so its call is omitted.</emu-note>
+        <emu-note>Even though field initializers constitute a function boundary, calling FunctionDeclarationInstantiation does not have any observable effect and so is omitted.</emu-note>
       </emu-clause>
 
       <emu-clause id="sec-ordinarycallevaluatebody" aoid="OrdinaryCallEvaluateBody">
@@ -16522,7 +16520,7 @@
         <emu-alg>
           1. Let _bv_ be ? RequireObjectCoercible(_baseValue_).
           1. Let _fieldNameString_ be the StringValue of |PrivateIdentifier|.
-          1. Return MakePrivateReference(_bv_, _fieldNameString_).
+          1. Return ? MakePrivateReference(_bv_, _fieldNameString_).
         </emu-alg>
         <emu-grammar>OptionalChain : OptionalChain Arguments</emu-grammar>
         <emu-alg>
@@ -16556,7 +16554,7 @@
           1. Let _newValue_ be ? GetValue(_newReference_).
           1. Let _nv_ be ? RequireObjectCoercible(_newValue_).
           1. Let _fieldNameString_ be the StringValue of |PrivateIdentifier|.
-          1. Return MakePrivateReference(_nv_, _fieldNameString_).
+          1. Return ? MakePrivateReference(_nv_, _fieldNameString_).
         </emu-alg>
       </emu-clause>
     </emu-clause>
@@ -21121,7 +21119,7 @@
           It is a Syntax Error if PrototypePropertyNameList of |ClassElementList| contains more than one occurrence of *"constructor"*.
         </li>
         <li>
-          It is a Syntax Error if PrivateBoundIdentifiers of |ClassElementList| contains any duplicate entries, unless the name is used once for a getter and once for a setter and in no other entries.
+          It is a Syntax Error if PrivateBoundIdentifiers of |ClassElementList| contains any duplicate entries, unless the name is used once for a getter and once for a setter and in no other entries, and the getter and setter are either both static or both non-static.
         </li>
       </ul>
       <emu-grammar>ClassElement : MethodDefinition</emu-grammar>
@@ -21160,7 +21158,7 @@
           ClassElementName Initializer?
       </emu-grammar>
       <ul>
-        <li>It is a Syntax Error if ContainsArguments of |Initializer| is *true*.</li>
+        <li>It is a Syntax Error if |Initializer| is present and ContainsArguments of |Initializer| is *true*.</li>
         <li>It is a Syntax Error if |Initializer| is present and |Initializer| Contains |SuperCall| is *true*.</li>
       </ul>
 
