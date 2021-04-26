@@ -21268,15 +21268,24 @@
     <emu-clause id="sec-class-definitions-static-semantics-allprivateidentifiersvalid" type="sdo" aoid="AllPrivateIdentifiersValid">
       <h1>Static Semantics: AllPrivateIdentifiersValid</h1>
       <p>With parameter _names_.</p>
+
+      <p>Every grammar production alternative in this specification which is not listed below implicitly has the following default definition of AllPrivateIdentifiersValid:</p>
+      <emu-alg>
+        1. For each child node _child_ of this Parse Node, do
+          1. If _child_ is an instance of a nonterminal, then
+            1. If AllPrivateIdentifiersValid of _child_ with argument _names_ is *false*, return *false*.
+        1. Return *true*.
+      </emu-alg>
+
       <emu-grammar>MemberExpression : MemberExpression `.` PrivateIdentifier</emu-grammar>
       <emu-alg>
-        1. If StringValue of |PrivateIdentifier| is in _names_, return *true*.
+        1. If _names_ contains the StringValue of |PrivateIdentifier|, return *true*.
         1. Return *false*.
       </emu-alg>
 
       <emu-grammar>CallExpression : CallExpression `.` PrivateIdentifier</emu-grammar>
       <emu-alg>
-        1. If StringValue of |PrivateIdentifier| is in _names_, return *true*.
+        1. If _names_ contains the StringValue of |PrivateIdentifier|, return *true*.
         1. Return *false*.
       </emu-alg>
 
@@ -21298,8 +21307,6 @@
         1. Append to _newNames_ the elements of PrivateBoundIdentifiers of |ClassBody|.
         1. Return AllPrivateIdentifiersValid of |ClassElementList| with argument _newNames_.
       </emu-alg>
-
-      <p>For all other grammatical productions, recurse on subexpressions/substatements, passing in the _names_ of the caller. If all pieces return *true*, then return *true*. If any returns *false*, return *false*.</p>
     </emu-clause>
 
     <emu-clause id="sec-class-definitions-static-semantics-privateboundidentifiers" type="sdo" aoid="PrivateBoundIdentifiers">
@@ -21358,6 +21365,15 @@
 
     <emu-clause id="sec-class-definitions-static-semantics-containsarguments" type="sdo" aoid="ContainsArguments">
       <h1>Static Semantics: ContainsArguments</h1>
+
+      <p>Every grammar production alternative in this specification which is not listed below implicitly has the following default definition of ContainsArguments:</p>
+      <emu-alg>
+        1. For each child node _child_ of this Parse Node, do
+          1. If _child_ is an instance of a nonterminal, then
+            1. If ContainsArguments of _child_ is *true*, return *true*.
+        1. Return *false*.
+      </emu-alg>
+
       <emu-grammar>
         IdentifierReference : Identifier
       </emu-grammar>
@@ -21405,11 +21421,6 @@
         1. Return *false*.
       </emu-alg>
 
-      <emu-grammar>ClassBody : ClassElementList</emu-grammar>
-      <emu-alg>
-        1. Return *false*.
-      </emu-alg>
-
       <emu-grammar>
         AsyncMethod : `async` ClassElementName `(` UniqueFormalParameters `)` `{` AsyncFunctionBody `}`
       </emu-grammar>
@@ -21429,8 +21440,6 @@
       <emu-alg>
         1. Return *false*.
       </emu-alg>
-
-      <p>For all other grammatical productions, recurse on all nonterminals. If any piece returns *true*, then return *true*. Otherwise return *false*.</p>
     </emu-clause>
 
     <emu-clause id="sec-class-definitions-runtime-semantics-classfielddefinitionevaluation" type="sdo" aoid="ClassFieldDefinitionEvaluation">
@@ -21559,7 +21568,7 @@
         1. If PrivateBoundIdentifiers of |ClassBody| contains a Private Name _P_ such that _P_.[[Kind]] is either ~method~ or ~accessor~ and _P_.[[Brand]] is _proto_, then
           1. Set _F_.[[PrivateBrand]] to _proto_.
         1. If PrivateBoundIdentifiers of |ClassBody| contains a Private Name _P_ such that _P_.[[Kind]] is either ~method~ or ~accessor~ and _P_.[[Brand]] is _F_, then
-          1. Let _result_ be PrivateBrandAdd(_F_, _F_).
+          1. Let _result_ be ? PrivateBrandAdd(_F_, _F_).
           1. If _result_ is an abrupt completion, then
             1. Set the running execution context's PrivateEnvironment to _outerPrivateEnvironment_.
             1. Return _result_.
@@ -21635,10 +21644,6 @@
         1. Let _value_ be ? ClassDefinitionEvaluation of |ClassTail| with arguments _className_ and _className_.
         1. Set _value_.[[SourceText]] to the source text matched by |ClassExpression|.
         1. Return _value_.
-      </emu-alg>
-      <emu-grammar>ClassElementName : PropertyName</emu-grammar>
-      <emu-alg>
-        1. Return the result of evaluating |PropertyName|.
       </emu-alg>
       <emu-grammar>ClassElementName : PrivateIdentifier</emu-grammar>
       <emu-alg>
@@ -24654,11 +24659,11 @@
                   1. NOTE: A direct eval will not hoist var declaration over a like-named lexical declaration.
               1. Set _thisEnv_ to _thisEnv_.[[OuterEnv]].
           1. Let _privateIdentifiers_ be a new empty List.
-          1. Let _privEnv_ be _privateEnv_.
-          1. Repeat, while _privEnv_ is not *null*,
-            1. For each binding named _N_ in _privEnv_, do
+          1. Let _pointer_ be _privateEnv_.
+          1. Repeat, while _pointer_ is not *null*,
+            1. For each binding named _N_ in _pointer_, do
               1. If _privateIdentifiers_ does not contain _N_, append _N_ to _privateIdentifiers_.
-            1. Set _privEnv_ to _privEnv_.[[OuterEnv]].
+            1. Set _pointer_ to _pointer_.[[OuterEnv]].
           1. If AllPrivateIdentifiersValid of _body_ with argument _privateIdentifiers_ is *false*, throw a *SyntaxError* exception.
           1. Let _functionsToInitialize_ be a new empty List.
           1. Let _declaredFunctionNames_ be a new empty List.
