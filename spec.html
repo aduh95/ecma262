@@ -3766,7 +3766,7 @@
           1. If IsPropertyReference(_V_) is *true*, then
             1. [id="step-getvalue-toobject"] Let _baseObj_ be ! ToObject(_V_.[[Base]]).
             1. If IsPrivateReference(_V_) is *true*, then
-              1. Return ? PrivateFieldGet(_V_.[[ReferencedName]], _baseObj_).
+              1. Return ? PrivateGet(_V_.[[ReferencedName]], _baseObj_).
             1. Return ? _baseObj_.[[Get]](_V_.[[ReferencedName]], GetThisValue(_V_)).
           1. Else,
             1. Let _base_ be _V_.[[Base]].
@@ -3792,7 +3792,7 @@
           1. If IsPropertyReference(_V_) is *true*, then
             1. [id="step-putvalue-toobject"] Let _baseObj_ be ! ToObject(_V_.[[Base]]).
             1. If IsPrivateReference(_V_) is *true*, then
-              1. Return ? PrivateFieldSet(_V_.[[ReferencedName]], _baseObj_, _W_).
+              1. Return ? PrivateSet(_V_.[[ReferencedName]], _baseObj_, _W_).
             1. Let _succeeded_ be ? _baseObj_.[[Set]](_V_.[[ReferencedName]], _W_, GetThisValue(_V_)).
             1. If _succeeded_ is *false* and _V_.[[Strict]] is *true*, throw a *TypeError* exception.
             1. Return.
@@ -4047,7 +4047,7 @@
 
     <emu-clause id="sec-privatefield-record-specification-type">
       <h1>The PrivateField Record Specification Type</h1>
-      <p>The PrivateField type is a Record used in the specification of private class fields, methods, and accessors. Private methods and accessors are modeled using PrivateField Records whose [[PrivateFieldValue]] is ~empty~.</p>
+      <p>The PrivateField type is a Record used in the specification of private class fields, methods, and accessors.</p>
       <p>Values of the PrivateField type are Record values whose fields are defined as by <emu-xref href="#table-privatefield-fields"></emu-xref>. Such values are referred to as <dfn>PrivateField Record</dfn>s.</p>
       <emu-table id="table-privatefield-fields" caption="PrivateField Record Fields">
         <table>
@@ -4055,6 +4055,9 @@
           <tr>
             <th>
               Field Name
+            </th>
+            <th>
+              Values of the [[Kind]] field for which it is present
             </th>
             <th>
               Value
@@ -4068,6 +4071,9 @@
               [[PrivateFieldName]]
             </td>
             <td>
+              All
+            </td>
+            <td>
               a Private Name
             </td>
             <td>
@@ -4076,13 +4082,55 @@
           </tr>
           <tr>
             <td>
+              [[Kind]]
+            </td>
+            <td>
+              ~field~, ~method~, or ~accessor~
+            </td>
+            <td>
+              All
+            </td>
+          </tr>
+          <tr>
+            <td>
               [[PrivateFieldValue]]
             </td>
             <td>
-              any ECMAScript language value, in the case of fields, or ~empty~, in the case of methods and accessors
+              ~field~ and ~method~
+            </td>
+            <td>
+              any ECMAScript language value
             </td>
             <td>
               The value of the field.
+            </td>
+          </tr>
+          <tr>
+            <td>
+              [[Get]]
+            </td>
+            <td>
+              ~accessor~
+            </td>
+            <td>
+              Function or Undefined
+            </td>
+            <td>
+              The getter for a private accessor.
+            </td>
+          </tr>
+          <tr>
+            <td>
+              [[Set]]
+            </td>
+            <td>
+              ~accessor~
+            </td>
+            <td>
+              Function or Undefined
+            </td>
+            <td>
+              The setter for a private accessor.
             </td>
           </tr>
           </tbody>
@@ -4148,7 +4196,7 @@
 
     <emu-clause id="sec-private-names">
       <h1>Private Names</h1>
-      <p>The <dfn>Private Name</dfn> specification type is used to describe a globally unique record which represents a private class element (field, method, or accessor). A Private Name may be installed on any ECMAScript object with PrivateFieldAdd, and then read or written using PrivateFieldGet and PrivateFieldSet.</p>
+      <p>The <dfn>Private Name</dfn> specification type is used to describe a globally unique record which represents a private class element (field, method, or accessor). A Private Name may be installed on any ECMAScript object with PrivateFieldAdd or PrivateMethodAdd, and then read or written using PrivateGet and PrivateSet.</p>
 
       <p>Each Private Name holds the following information:</p>
       <emu-table id="table-private-name-fields" caption="Fields of the Private Name">
@@ -4160,9 +4208,6 @@
             </th>
             <th>
               Type
-            </th>
-            <th>
-              Values of the [[Kind]] field for which it is present
             </th>
             <th>
               Description
@@ -4178,66 +4223,7 @@
               String
             </td>
             <td>
-              All
-            </td>
-            <td>
               The string value passed to NewPrivateName when creating this Private Name.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              [[Kind]]
-            </td>
-            <td>
-              ~field~, ~method~, or ~accessor~
-            </td>
-            <td>
-              All
-            </td>
-            <td>
-              Indicates what the private name is used for.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              [[Value]]
-            </td>
-            <td>
-              Function
-            </td>
-            <td>
-              ~method~
-            </td>
-            <td>
-              The value of the private method.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              [[Get]]
-            </td>
-            <td>
-              Function
-            </td>
-            <td>
-              ~accessor~
-            </td>
-            <td>
-              The getter for a private accessor.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              [[Set]]
-            </td>
-            <td>
-              Function
-            </td>
-            <td>
-              ~accessor~
-            </td>
-            <td>
-              The setter for a private accessor.
             </td>
           </tr>
           </tbody>
@@ -5779,8 +5765,8 @@
       </emu-alg>
     </emu-clause>
 
-    <emu-clause id="sec-privatefieldfind" aoid="PrivateFieldFind">
-      <h1>PrivateFieldFind ( _P_, _O_ )</h1>
+    <emu-clause id="sec-privateelementfind" aoid="PrivateElementFind">
+      <h1>PrivateElementFind ( _P_, _O_ )</h1>
       <emu-alg>
         1. Assert: _P_ is a Private Name.
         1. Assert: Type(_O_) is Object.
@@ -5795,45 +5781,53 @@
       <emu-alg>
         1. Assert: _P_ is a Private Name.
         1. Assert: Type(_O_) is Object.
-        1. Let _entry_ be ! PrivateFieldFind(_P_, _O_).
+        1. Let _entry_ be ! PrivateElementFind(_P_, _O_).
         1. If _entry_ is not ~empty~, throw a *TypeError* exception.
-        1. Append PrivateField { [[PrivateFieldName]]: _P_, [[PrivateFieldValue]]: _value_ } to _O_.[[PrivateFields]].
+        1. Append PrivateField { [[PrivateFieldName]]: _P_, [[Kind]]: ~field~, [[PrivateFieldValue]]: _value_ } to _O_.[[PrivateFields]].
       </emu-alg>
     </emu-clause>
 
-    <emu-clause id="sec-privatefieldget" aoid="PrivateFieldGet">
-      <h1>PrivateFieldGet ( _P_, _O_ )</h1>
+    <emu-clause id="sec-privatemethodadd" aoid="PrivateMethodAdd">
+      <h1>PrivateMethodAdd ( _method_, _O_ )</h1>
+      <emu-alg>
+        1. Assert: _method_.[[Kind]] is either ~method~ or ~accessor~.
+        1. Let _entry_ be ! PrivateElementFind(_method_.[[PrivateFieldName]], _O_).
+        1. If _entry_ is not ~empty~, throw a *TypeError* exception.
+        1. Append _method_ to _O_.[[PrivateFields]].
+        1. NOTE: the values for private methods and accessors are shared across instances. This step does not create a new copy of the method or accessor.
+      </emu-alg>
+    </emu-clause>
+
+    <emu-clause id="sec-privateget" aoid="PrivateGet">
+      <h1>PrivateGet ( _P_, _O_ )</h1>
       <emu-alg>
         1. Assert: _P_ is a Private Name.
         1. Assert: Type(_O_) is Object.
-        1. Let _entry_ be ! PrivateFieldFind(_P_, _O_).
+        1. Let _entry_ be ! PrivateElementFind(_P_, _O_).
         1. If _entry_ is ~empty~, throw a *TypeError* exception.
-        1. If _P_.[[Kind]] is ~field~, then
+        1. If _entry_.[[Kind]] is ~field~ or ~method~, then
           1. Return _entry_.[[PrivateFieldValue]].
-        1. Assert: _entry_.[[PrivateFieldValue]] is ~empty~.
-        1. If _P_.[[Kind]] is ~method~, then
-          1. Return _P_.[[Value]].
         1. Assert: _P_.[[Kind]] is ~accessor~.
-        1. If _P_ does not have a [[Get]] field, throw a *TypeError* exception.
+        1. If _P_.[[Get]] is *undefined*, throw a *TypeError* exception.
         1. Let _getter_ be _P_.[[Get]].
         1. Return ? Call(_getter_, _O_).
       </emu-alg>
     </emu-clause>
 
-    <emu-clause id="sec-privatefieldset" aoid="PrivateFieldSet">
-      <h1>PrivateFieldSet ( _P_, _O_, _value_ )</h1>
+    <emu-clause id="sec-privateset" aoid="PrivateSet">
+      <h1>PrivateSet ( _P_, _O_, _value_ )</h1>
       <emu-alg>
         1. Assert: _P_ is a Private Name.
         1. Assert: Type(_O_) is Object.
-        1. Let _entry_ be ! PrivateFieldFind(_P_, _O_).
+        1. Let _entry_ be ! PrivateElementFind(_P_, _O_).
         1. If _entry_ is ~empty~, throw a *TypeError* exception.
-        1. If _P_.[[Kind]] is ~field~, then
+        1. If _entry_.[[Kind]] is ~field~, then
           1. Set _entry_.[[PrivateFieldValue]] to _value_.
           1. Return.
-        1. If _P_.[[Kind]] is ~method~, throw a *TypeError* exception.
-        1. Assert: _P_.[[Kind]] is ~accessor~.
-        1. If _P_ does not have a [[Set]] field, throw a *TypeError* exception.
-        1. Let _setter_ be _P_.[[Set]].
+        1. If _entry_.[[Kind]] is ~method~, throw a *TypeError* exception.
+        1. Assert: _entry_.[[Kind]] is ~accessor~.
+        1. If _entry_.[[Set]] is *undefined*, throw a *TypeError* exception.
+        1. Let _setter_ be _entry_.[[Set]].
         1. Perform ? Call(_setter_, _O_, &laquo; _value_ &raquo;).
       </emu-alg>
     </emu-clause>
@@ -5865,9 +5859,8 @@
         1. Assert: Type(_O_) is Object.
         1. Assert: _constructor_ is an ECMAScript function object.
         1. Let _methods_ be the value of _constructor_.[[PrivateMethods]].
-        1. For each Private Name _name_ of _constructor_.[[PrivateMethods]], do
-          1. Assert: _name_.[[Kind]] is either ~method~ or ~accessor~.
-          1. Perform ? PrivateFieldAdd(_name_, _O_, ~empty~).
+        1. For each PrivateField Record _method_ of _constructor_.[[PrivateMethods]], do
+          1. Perform ? PrivateMethodAdd(_method_, _O_).
         1. Let _fields_ be the value of _constructor_.[[Fields]].
         1. For each element _fieldRecord_ of _fields_, do
           1. Perform ? DefineField(_O_, _fieldRecord_).
@@ -11113,10 +11106,10 @@
             [[PrivateMethods]]
           </td>
           <td>
-            List of Private Names
+            List of PrivateField Records
           </td>
           <td>
-            If the function is a class, this is a list of Private Names representing the non-static private methods and accessors of the class.
+            If the function is a class, this is a list representing the non-static private methods and accessors of the class.
           </td>
         </tr>
         <tr>
@@ -11397,11 +11390,7 @@
       <emu-alg>
         1. Perform SetFunctionName(_closure_, _key_).
         1. If _key_ is a Private Name, then
-          1. Assert: _key_ does not have a [[Kind]] field.
-          1. Set _key_.[[Kind]] to ~method~.
-          1. Set _key_.[[Value]] to _closure_.
-          1. Set _key_.[[Brand]] to _homeObject_.
-          1. Return _key_.
+          1. Return PrivateField { [[PrivateFieldName]]: _key_, [[Kind]]: ~method~, [[PrivateFieldValue]]: _closure_ }.
         1. Else,
           1. Let _desc_ be the PropertyDescriptor { [[Value]]: _closure_, [[Writable]]: *true*, [[Enumerable]]: _enumerable_, [[Configurable]]: *true* }.
           1. Perform ? DefinePropertyOrThrow(_homeObject_, _key_, _desc_).
@@ -20546,17 +20535,7 @@
         1. Perform MakeMethod(_closure_, _object_).
         1. Perform SetFunctionName(_closure_, _propKey_, *"get"*).
         1. If _propKey_ is a Private Name, then
-          1. If _propKey_ has a [[Kind]] field, then
-            1. Assert: _propKey_.[[Kind]] is ~accessor~.
-            1. Assert: _propKey_.[[Brand]] is _object_.
-            1. Assert: _propKey_ does not have a [[Get]] field.
-            1. Set _propKey_.[[Get]] to _closure_.
-            1. Return ~empty~.
-          1. Else,
-            1. Set _propKey_.[[Kind]] to ~accessor~.
-            1. Set _propKey_.[[Brand]] to _object_.
-            1. Set _propKey_.[[Get]] to _closure_.
-            1. Return _propKey_.
+          1. Return PrivateField { [[PrivateFieldName]]: _key_, [[Kind]]: ~accessor~, [[Get]]: _closure_, [[Set]]: *undefined* }.
         1. Else,
           1. Let _desc_ be the PropertyDescriptor { [[Get]]: _closure_, [[Enumerable]]: _enumerable_, [[Configurable]]: *true* }.
           1. Perform ? DefinePropertyOrThrow(_object_, _propKey_, _desc_).
@@ -20573,17 +20552,7 @@
         1. Perform MakeMethod(_closure_, _object_).
         1. Perform SetFunctionName(_closure_, _propKey_, *"set"*).
         1. If _propKey_ is a Private Name, then
-          1. If _propKey_ has a [[Kind]] field, then
-            1. Assert: _propKey_.[[Kind]] is ~accessor~.
-            1. Assert: _propKey_.[[Brand]] is _object_.
-            1. Assert: _propKey_ does not have a [[Set]] field.
-            1. Set _propKey_.[[Set]] to _closure_.
-            1. Return ~empty~.
-          1. Else,
-            1. Set _propKey_.[[Kind]] to ~accessor~.
-            1. Set _propKey_.[[Brand]] to _object_.
-            1. Set _propKey_.[[Set]] to _closure_.
-            1. Return _propKey_.
+          1. Return PrivateField { [[PrivateFieldName]]: _key_, [[Kind]]: ~accessor~, [[Get]]: *undefined*, [[Set]]: _closure_ }.
         1. Else,
           1. Let _desc_ be the PropertyDescriptor { [[Set]]: _closure_, [[Enumerable]]: _enumerable_, [[Configurable]]: *true* }.
           1. Perform ? DefinePropertyOrThrow(_object_, _propKey_, _desc_).
@@ -21532,10 +21501,20 @@
             1. Set the running execution context's PrivateEnvironment to _outerPrivateEnvironment_.
             1. Return Completion(_field_).
           1. Set _field_ to _field_.[[Value]].
-          1. If _field_ is a Private Name, then
+          1. If _field_ is a PrivateField Record, then
             1. Assert: _field_.[[Kind]] is either ~method~ or ~accessor~.
-            1. If IsStatic of _e_ is *false*, append _field_ to _instancePrivateMethods_.
-            1. Else, append _field_ to _staticPrivateMethods_.
+            1. If IsStatic is *false*, let _container_ be _instancePrivateMethods_.
+            1. Else, let _container_ be _staticPrivateMethods_.
+            1. If _container_ contains a PrivateField Record whose [[PrivateFieldName]] is _field_.[[PrivateFieldName]], then
+              1. Let _existing_ be that PrivateField Record.
+              1. Assert: _field_.[[Kind]] and _existing_.[[Kind]] are both ~accessor~.
+              1. If _field_.[[Get]] is *undefined*, then
+                1. Let _combined_ be PrivateField { [[PrivateFieldName]]: _field_._key_, [[Kind]]: ~accessor~, [[Get]]: _existing_.[[Get]], [[Set]]: _field_.[[Set]] }.
+              1. Else,
+                1. Let _combined_ be PrivateField { [[PrivateFieldName]]: _field_._key_, [[Kind]]: ~accessor~, [[Get]]: _field_.[[Get]], [[Set]]: _existing_.[[Set]] }.
+              1. Replace _existing_ in _container_ with _combined_.
+            1. Else,
+              1. Append _field_ to _container_.
           1. Else if _field_ is a ClassFieldDefinition Record, then
             1. If IsStatic of _e_ is *false*, append _field_ to _instanceFields_.
             1. Else, append _field_ to _staticFields_.
@@ -21544,8 +21523,8 @@
           1. Perform _classScope_.InitializeBinding(_classBinding_, _F_).
         1. Set _F_.[[PrivateMethods]] to _instancePrivateMethods_.
         1. Set _F_.[[Fields]] to _instanceFields_.
-        1. For each Private Name _name_ of _staticPrivateMethods_, do
-          1. Let _result_ be PrivateFieldAdd(_name_, _F_, ~empty~).
+        1. For each PrivateField Record _method_ of _staticPrivateMethods_, do
+          1. Let _result_ be PrivateMethodAdd(_method_, _F_).
           1. If _result_ is an abrupt completion, then
             1. Set the running execution context's PrivateEnvironment to _outerPrivateEnvironment_.
             1. Return _result_.
