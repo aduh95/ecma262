@@ -24735,9 +24735,9 @@
           1. Let _privateIdentifiers_ be a new empty List.
           1. Let _pointer_ be _privateEnv_.
           1. Repeat, while _pointer_ is not *null*,
-            1. For each binding named _N_ in _pointer_, do
-              1. If _privateIdentifiers_ does not contain _N_, append _N_ to _privateIdentifiers_.
-            1. Set _pointer_ to _pointer_.[[OuterEnv]].
+            1. For each element _binding_ in _pointer_.[[Names]], do
+              1. If _privateIdentifiers_ does not contain _binding_.[[Identifier]], append _binding_.[[Identifier]] to _privateIdentifiers_.
+            1. Set _pointer_ to _pointer_.[[OuterPrivEnv]].
           1. If AllPrivateIdentifiersValid of _body_ with argument _privateIdentifiers_ is *false*, throw a *SyntaxError* exception.
           1. Let _functionsToInitialize_ be a new empty List.
           1. Let _declaredFunctionNames_ be a new empty List.
