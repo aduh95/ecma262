@@ -3842,10 +3842,9 @@
       <emu-clause id="sec-makeprivatereference" aoid="MakePrivateReference">
         <h1>MakePrivateReference ( _baseValue_, _privateIdentifier_ )</h1>
         <emu-alg>
-          1. Let _env_ be the running execution context's PrivateEnvironment.
-          1. Let _privateNameBinding_ be ! ResolveBinding(_privateIdentifier_, _env_).
-          1. Let _privateName_ be ? GetValue(_privateNameBinding_).
-          1. Assert: _privateIdentifier_ is a Private Name.
+          1. Let _privEnv_ be the running execution context's PrivateEnvironment.
+          1. Assert: _privEnv_ is not *null*.
+          1. Let _privateName_ be ! ResolvePrivateIdentifier(_privEnv_, _privateIdentifier_).
           1. Return the Reference Record { [[Base]]: _baseValue_, [[ReferencedName]]: _privateName_, [[Strict]]: *true*, [[ThisValue]]: ~empty~ }.
         </emu-alg>
       </emu-clause>
@@ -9803,6 +9802,82 @@
     </emu-clause>
   </emu-clause>
 
+  <emu-clause id="sec-privateenvironment-records">
+    <h1>PrivateEnvironment Records</h1>
+    <p>A <dfn id="privateenvironment-record">PrivateEnvironment Record</dfn> is a specification mechanism used to associate String values arising from |PrivateIdentifier|s with Private Names, based upon the lexical nesting structure of |ClassDeclaration|s and |ClassExpression|s in ECMAScript code. They are similar to, but distinct from, Environment Records. Each PrivateEnvironment Record is associated with a |ClassDeclaration| or |ClassExpression|. Each time such a class is evaluated, a new PrivateEnvironment Record is created to record the Private Names declared by that class.</p>
+    <p>Each PrivateEnvironment Record has the fields defined in <emu-xref href="#table-privateenvironment-records"></emu-xref>.</p>
+    <emu-table id="table-privateenvironment-records" caption="PrivateEnvironment Record Fields">
+      <table>
+        <thead>
+        <tr>
+          <th>
+            Field Name
+          </th>
+          <th>
+            Value Type
+          </th>
+          <th>
+            Meaning
+          </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>
+            [[OuterPrivEnv]]
+          </td>
+          <td>
+            PrivateEnvironment Record | *null*
+          </td>
+          <td>
+            The PrivateEnvironment Record of the nearest containing class. *null* if the class with which this PrivateEnvironment Record is associated is not contained in any other class.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            [[Names]]
+          </td>
+          <td>
+            List of Records of the form { [[Identifier]]: String, [[PrivateName]]: ~empty~ | Private Name }.
+          </td>
+          <td>
+            The mapping of String values to Private Names. ~empty~ while the class is initializing.
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </emu-table>
+
+    <emu-clause id="sec-privateenvironment-record-operations">
+      <h1>PrivateEnvironment Record Operations</h1>
+      <p>The following abstract operations are used in this specification to operate upon PrivateEnvironment Records:</p>
+
+      <emu-clause id="sec-newprivateenvironment" aoid="NewPrivateEnvironment">
+        <h1>NewPrivateEnvironment ( _outerPrivEnv_ )</h1>
+        <p>The abstract operation NewPrivateEnvironment takes argument _outerPrivEnv_ (a PrivateEnvironment Record or *null*). It performs the following steps when called:</p>
+        <emu-alg>
+          1. Let _names_ be a new empty List.
+          1. Return a new PrivateEnvironment Record { [[OuterPrivEnv]]: _outerPrivEnv_, [[Names]]: _names_ }.
+        </emu-alg>
+      </emu-clause>
+
+      <emu-clause id="sec-resolve-private-identifier" aoid="ResolvePrivateIdentifier">
+        <h1>ResolvePrivateIdentifier ( _privEnv_, _identifier_ )</h1>
+        <p>The abstract operation ResolvePrivateIdentifier takes arguments _privEnv_ (a PrivateEnvironment Record) and _identifier_ (a String). It performs the following steps when called:</p>
+        <emu-alg>
+          1. Let _names_ be _privEnv_.[[Names]].
+          1. If _names_ contains a Record whose [[Identifier]] is _identifier_, then
+            1. Let _binding_ be that Record.
+            1. Return _binding_.[[PrivateName]].
+          1. Else,
+            1. Let _outerPrivEnv_ be _privEnv_.[[OuterPrivEnv]].
+            1. Assert: _outerPrivEnv_ is not *null*.
+            1. Return ResolvePrivateIdentifier(_outerPrivEnv_, _identifier_).
+        </emu-alg>
+      </emu-clause>
+    </emu-clause>
+  </emu-clause>
+
   <emu-clause id="sec-code-realms">
     <h1>Realms</h1>
     <p>Before it is evaluated, all ECMAScript code must be associated with a <dfn id="realm">realm</dfn>. Conceptually, a realm consists of a set of intrinsic objects, an ECMAScript global environment, all of the ECMAScript code that is loaded within the scope of that global environment, and other associated state and resources.</p>
@@ -10022,7 +10097,7 @@
             PrivateEnvironment
           </td>
           <td>
-            Identifies the Environment Record that holds Private Names created by |ClassElement|s.
+            Identifies the PrivateEnvironment Record that holds Private Names created by |ClassElement|s in the nearest containing class. *null* if there is no containing class.
           </td>
         </tr>
         </tbody>
@@ -10030,7 +10105,6 @@
     </emu-table>
     <p>The LexicalEnvironment and VariableEnvironment components of an execution context are always Environment Records.</p>
     <p>Execution contexts representing the evaluation of generator objects have the additional state components listed in <emu-xref href="#table-additional-state-components-for-generator-execution-contexts"></emu-xref>.</p>
-    <emu-note>The PrivateEnvironment Lexical Context is always a chain of Declaration Contexts. Each name begins with *"#"*.</emu-note>
     <emu-table id="table-additional-state-components-for-generator-execution-contexts" caption="Additional State Components for Generator Execution Contexts" oldids="table-24">
       <table>
         <tbody>
@@ -11030,10 +11104,10 @@
             [[PrivateEnvironment]]
           </td>
           <td>
-            Environment Record
+            PrivateEnvironment Record | *null*
           </td>
           <td>
-            The Environment Record for Private Names that the function was closed over. Used as the outer environment for Private Names when evaluating the code of the function.
+            The PrivateEnvironment Record for Private Names that the function was closed over. *null* if this function is not syntactically contained within a class. Used as the outer PrivateEnvironment for inner classes when evaluating the code of the function.
           </td>
         </tr>
         <tr>
@@ -11340,7 +11414,7 @@
 
     <emu-clause id="sec-ordinaryfunctioncreate" aoid="OrdinaryFunctionCreate" oldids="sec-functionallocate,sec-functioninitialize,sec-functioncreate,sec-generatorfunctioncreate,sec-asyncgeneratorfunctioncreate,sec-async-functions-abstract-operations-async-function-create">
       <h1>OrdinaryFunctionCreate ( _functionPrototype_, _sourceText_, _ParameterList_, _Body_, _thisMode_, _Scope_, _PrivateScope_ )</h1>
-      <p>The abstract operation OrdinaryFunctionCreate takes arguments _functionPrototype_ (an Object), _sourceText_ (a sequence of Unicode code points), _ParameterList_ (a Parse Node), _Body_ (a Parse Node), _thisMode_ (either ~lexical-this~ or ~non-lexical-this~), _Scope_ (an Environment Record), and _PrivateScope_ (an Environment Record). _sourceText_ is the source text of the syntactic definition of the function to be created. It performs the following steps when called:</p>
+      <p>The abstract operation OrdinaryFunctionCreate takes arguments _functionPrototype_ (an Object), _sourceText_ (a sequence of Unicode code points), _ParameterList_ (a Parse Node), _Body_ (a Parse Node), _thisMode_ (either ~lexical-this~ or ~non-lexical-this~), _Scope_ (an Environment Record), and _PrivateScope_ (a PrivateEnvironment Record or *null*). _sourceText_ is the source text of the syntactic definition of the function to be created. It performs the following steps when called:</p>
       <emu-alg>
         1. Assert: Type(_functionPrototype_) is Object.
         1. Let _internalSlotsList_ be the internal slots listed in <emu-xref href="#table-internal-slots-of-ecmascript-function-objects"></emu-xref>.
@@ -16177,7 +16251,7 @@
           1. Let _baseValue_ be ? GetValue(_baseReference_).
           1. Let _bv_ be ? RequireObjectCoercible(_baseValue_).
           1. Let _fieldNameString_ be the StringValue of |PrivateIdentifier|.
-          1. Return ? MakePrivateReference(_bv_, _fieldNameString_).
+          1. Return ! MakePrivateReference(_bv_, _fieldNameString_).
         </emu-alg>
         <emu-grammar>CallExpression : CallExpression `[` Expression `]`</emu-grammar>
         <emu-alg>
@@ -16199,7 +16273,7 @@
           1. Let _baseValue_ be ? GetValue(_baseReference_).
           1. Let _bv_ be ? RequireObjectCoercible(_baseValue_).
           1. Let _fieldNameString_ be the StringValue of |PrivateIdentifier|.
-          1. Return ? MakePrivateReference(_bv_, _fieldNameString_).
+          1. Return ! MakePrivateReference(_bv_, _fieldNameString_).
         </emu-alg>
       </emu-clause>
     </emu-clause>
@@ -16520,7 +16594,7 @@
         <emu-alg>
           1. Let _bv_ be ? RequireObjectCoercible(_baseValue_).
           1. Let _fieldNameString_ be the StringValue of |PrivateIdentifier|.
-          1. Return ? MakePrivateReference(_bv_, _fieldNameString_).
+          1. Return ! MakePrivateReference(_bv_, _fieldNameString_).
         </emu-alg>
         <emu-grammar>OptionalChain : OptionalChain Arguments</emu-grammar>
         <emu-alg>
@@ -16554,7 +16628,7 @@
           1. Let _newValue_ be ? GetValue(_newReference_).
           1. Let _nv_ be ? RequireObjectCoercible(_newValue_).
           1. Let _fieldNameString_ be the StringValue of |PrivateIdentifier|.
-          1. Return ? MakePrivateReference(_nv_, _fieldNameString_).
+          1. Return ! MakePrivateReference(_nv_, _fieldNameString_).
         </emu-alg>
       </emu-clause>
     </emu-clause>
@@ -21508,10 +21582,13 @@
         1. If _classBinding_ is not *undefined*, then
           1. Perform _classScope_.CreateImmutableBinding(_classBinding_, *true*).
         1. Let _outerPrivateEnvironment_ be the running execution context's PrivateEnvironment.
-        1. Let _classPrivateEnvironment_ be NewDeclarativeEnvironment(_outerPrivateEnvironment_).
+        1. Let _classPrivateEnvironment_ be NewPrivateEnvironment(_outerPrivateEnvironment_).
         1. If |ClassBody_opt| is present, then
-          1. For each element _dn_ of the PrivateBoundIdentifiers of |ClassBody_opt|, do
-            1. Perform _classPrivateEnvironment_.CreateImmutableBinding(_dn_, *true*).
+          1. For each String _dn_ of the PrivateBoundIdentifiers of |ClassBody_opt|, do
+            1. If _classPrivateEnvironment_.[[Names]] contains a Record whose [[Identifier]] is _dn_, then
+              1. Assert: this is only possible for getter/setter pairs.
+            1. Else,
+              1. Append a new Record { [[Identifier]]: _dn_, [[PrivateName]]: ~empty~ } to _classPrivateEnvironment_.[[Names]].
         1. If |ClassHeritage_opt| is not present, then
           1. Let _protoParent_ be %Object.prototype%.
           1. Let _constructorParent_ be %Function.prototype%.
@@ -21649,14 +21726,15 @@
       <emu-alg>
         1. Let _privateIdentifier_ be StringValue of |PrivateIdentifier|.
         1. Let _privateEnvRec_ be the running execution context's PrivateEnvironment.
-        1. Assert: _privateEnvRec_ has a binding for _privateIdentifier_.
-        1. If the binding for _privateIdentifier_ in _privateEnvRec_ is an uninitialized binding, then
+        1. Let _names_ be _privateEnvRec_.[[Names]].
+        1. Assert: _names_ contains exactly one Record whose [[Identifier]] is _privateIdentifier_.
+        1. Let _binding_ be the Record in _names_ whose [[Identifier]] is _privateIdentifier_.
+        1. If _binding_.[[PrivateName]] is ~empty~, then
           1. Let _privateName_ be NewPrivateName(_privateIdentifier_).
-          1. Perform ! _privateEnvRec_.InitializeBinding(_privateIdentifier_, _privateName_).
+          1. Set _binding_.[[PrivateName]] to _privateName_.
         1. Else,
-          1. Let _privateName_ be ! _privateEnvRec_.GetBindingValue(_privateIdentifier_, *true*).
+          1. Let _privateName_ be _binding_.[[PrivateName]].
           1. NOTE: The only case where this may occur is in getter/setter pairs; other duplicates are prohibited as a Syntax Error.
-          1. Assert: _privateName_ is a Private Name.
         1. Assert: _privateName_.[[Description]] is _privateIdentifier_.
         1. Return _privateName_.
       </emu-alg>
@@ -22477,8 +22555,7 @@
         1. Set the ScriptOrModule of _scriptContext_ to _scriptRecord_.
         1. Set the VariableEnvironment of _scriptContext_ to _globalEnv_.
         1. Set the LexicalEnvironment of _scriptContext_ to _globalEnv_.
-        1. Let _privateEnv_ be NewDeclarativeEnvironment(*null*).
-        1. Set the PrivateEnvironment of _scriptContext_ to _privateEnv_.
+        1. Set the PrivateEnvironment of _scriptContext_ to *null*.
         1. Suspend the currently running execution context.
         1. Push _scriptContext_ onto the execution context stack; _scriptContext_ is now the running execution context.
         1. Let _scriptBody_ be _scriptRecord_.[[ECMAScriptCode]].
@@ -23735,6 +23812,7 @@
             1. Set the ScriptOrModule of _moduleContext_ to _module_.
             1. Set the VariableEnvironment of _moduleContext_ to _module_.[[Environment]].
             1. Set the LexicalEnvironment of _moduleContext_ to _module_.[[Environment]].
+            1. Set the PrivateEnvironment of _moduleContext_ to *null*.
             1. Set _module_.[[Context]] to _moduleContext_.
             1. Push _moduleContext_ onto the execution context stack; _moduleContext_ is now the running execution context.
             1. Let _code_ be _module_.[[ECMAScriptCode]].
@@ -24599,7 +24677,7 @@
           1. Else,
             1. Let _lexEnv_ be NewDeclarativeEnvironment(_evalRealm_.[[GlobalEnv]]).
             1. Let _varEnv_ be _evalRealm_.[[GlobalEnv]].
-            1. Let _privateEnv_ be NewDeclarativeEnvironment(*null*).
+            1. Let _privateEnv_ be *null*.
           1. If _strictEval_ is *true*, set _varEnv_ to _lexEnv_.
           1. If _runningContext_ is not already suspended, suspend _runningContext_.
           1. Let _evalContext_ be a new ECMAScript code execution context.
@@ -25913,7 +25991,7 @@
             1. Let _proto_ be ? GetPrototypeFromConstructor(_newTarget_, _fallbackProto_).
             1. Let _realmF_ be the current Realm Record.
             1. Let _scope_ be _realmF_.[[GlobalEnv]].
-            1. Let _privateScope_ be NewDeclarativeEnvironment(*null*).
+            1. Let _privateScope_ be *null*.
             1. Let _F_ be ! OrdinaryFunctionCreate(_proto_, _sourceText_, _parameters_, _body_, ~non-lexical-this~, _scope_, _privateScope_).
             1. Perform SetFunctionName(_F_, *"anonymous"*).
             1. If _kind_ is ~generator~, then
