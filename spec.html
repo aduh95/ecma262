@@ -21588,7 +21588,7 @@
             1. If _classPrivateEnvironment_.[[Names]] contains a Record whose [[Identifier]] is _dn_, then
               1. Assert: this is only possible for getter/setter pairs.
             1. Else,
-              1. Let _name_ be NewPrivateName(_dn_)
+              1. Let _name_ be NewPrivateName(_dn_).
               1. Append a new Record { [[Identifier]]: _dn_, [[PrivateName]]: _name_ } to _classPrivateEnvironment_.[[Names]].
         1. If |ClassHeritage_opt| is not present, then
           1. Let _protoParent_ be %Object.prototype%.
