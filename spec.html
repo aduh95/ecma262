@@ -9857,7 +9857,7 @@
         <p>The abstract operation NewPrivateEnvironment takes argument _outerPrivEnv_ (a PrivateEnvironment Record or *null*). It performs the following steps when called:</p>
         <emu-alg>
           1. Let _names_ be a new empty List.
-          1. Return a new PrivateEnvironment Record { [[OuterPrivEnv]]: _outerPrivEnv_, [[Names]]: _names_ }.
+          1. Return the PrivateEnvironment Record { [[OuterPrivEnv]]: _outerPrivEnv_, [[Names]]: _names_ }.
         </emu-alg>
       </emu-clause>
 
@@ -21589,7 +21589,7 @@
               1. Assert: this is only possible for getter/setter pairs.
             1. Else,
               1. Let _name_ be NewPrivateName(_dn_).
-              1. Append a new Record { [[Identifier]]: _dn_, [[PrivateName]]: _name_ } to _classPrivateEnvironment_.[[Names]].
+              1. Append the Record { [[Identifier]]: _dn_, [[PrivateName]]: _name_ } to _classPrivateEnvironment_.[[Names]].
         1. If |ClassHeritage_opt| is not present, then
           1. Let _protoParent_ be %Object.prototype%.
           1. Let _constructorParent_ be %Function.prototype%.
@@ -24735,7 +24735,7 @@
           1. Let _privateIdentifiers_ be a new empty List.
           1. Let _pointer_ be _privateEnv_.
           1. Repeat, while _pointer_ is not *null*,
-            1. For each element _binding_ in _pointer_.[[Names]], do
+            1. For each element _binding_ of _pointer_.[[Names]], do
               1. If _privateIdentifiers_ does not contain _binding_.[[Identifier]], append _binding_.[[Identifier]] to _privateIdentifiers_.
             1. Set _pointer_ to _pointer_.[[OuterPrivEnv]].
           1. If AllPrivateIdentifiersValid of _body_ with argument _privateIdentifiers_ is *false*, throw a *SyntaxError* exception.
