@@ -21586,7 +21586,7 @@
         1. If |ClassBody_opt| is present, then
           1. For each String _dn_ of the PrivateBoundIdentifiers of |ClassBody_opt|, do
             1. If _classPrivateEnvironment_.[[Names]] contains a Record whose [[Identifier]] is _dn_, then
-              1. Assert: this is only possible for getter/setter pairs.
+              1. Assert: This is only possible for getter/setter pairs.
             1. Else,
               1. Let _name_ be NewPrivateName(_dn_).
               1. Append the Record { [[Identifier]]: _dn_, [[PrivateName]]: _name_ } to _classPrivateEnvironment_.[[Names]].
